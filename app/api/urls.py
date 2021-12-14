@@ -6,5 +6,6 @@ from . import views
 router = DefaultRouter()
 
 router.register('polls', views.PollViewSet, basename='polls')
+router.register('polls/(?P<id>\d+)/questions',views.QuestionViewSet,basename='questions')
 
 urlpatterns = router.urls
