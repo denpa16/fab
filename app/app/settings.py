@@ -82,6 +82,7 @@ WSGI_APPLICATION = 'app.wsgi.application'
     }
 }"""
 
+
 DATABASES = {
     "default": {
         "ENGINE": os.environ.get("SQL_ENGINE"),
@@ -120,6 +121,8 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
+USE_TZ = True
+
 USE_I18N = True
 
 USE_L10N = True
@@ -131,3 +134,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ]
+}

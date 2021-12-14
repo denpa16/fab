@@ -1,21 +1,28 @@
-from rest_framework import viewsets, mixins
+from rest_framework import viewsets, mixins, permissions
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.generics import get_object_or_404
+from api.models import Poll, Question, Answer, Choice
 from api.serializers import (
-    PollSerializer, QuestionSerializer,
+    PollSerializer, QuestionSerializer, AnswerSerializer,
+    UserPollSerializer, AnswerOneTextSerializer,
+    AnswerOneChoiceSerializer, AnswerMultipleChoiceSerializer,
     ChoiceSerializer,
 )
-from .models import Poll, Question, Choice
-from rest_framework.generics import get_object_or_404
 from datetime import datetime
+from django.db.models import Q
 
 
 class PollViewSet(viewsets.ModelViewSet):
     queryset = Poll.objects.all()
     serializer_class = PollSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    authentication_classes = (SessionAuthentication, BasicAuthentication)
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
-
+    permission_classes = (permissions.IsAdminUser,)
+    authentication_classes = (SessionAuthentication, BasicAuthentication)
 
     def get_queryset(self):
         poll = get_object_or_404(Poll, id=self.kwargs['id'])
@@ -29,6 +36,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
 class ChoiceViewSet(viewsets.ModelViewSet):
     queryset = Choice.objects.all()
     serializer_class = ChoiceSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    authentication_classes = (SessionAuthentication, BasicAuthentication)
 
     def perform_create(self, serializer):
         question = get_object_or_404(
@@ -46,4 +55,43 @@ class ChoiceViewSet(viewsets.ModelViewSet):
 class ActivePollListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = Poll.objects.filter(end_date__gte=datetime.today())
     serializer_class = PollSerializer
+    permission_classes = (permissions.AllowAny,)
 
+
+class AnswerCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = Answer.objects.all()
+    serializer_class = AnswerSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (SessionAuthentication, BasicAuthentication)
+
+    def get_serializer_class(self):
+        question = get_object_or_404(
+            Question,
+            pk=self.kwargs['question_pk'],
+            poll__id=self.kwargs['id'],
+        )
+        if question.type_question == 'text_field':
+            return AnswerOneTextSerializer
+        elif question.type_question == 'radio':
+            return AnswerOneChoiceSerializer
+        else:
+            return AnswerMultipleChoiceSerializer
+
+    def perform_create(self, serializer):
+        question = get_object_or_404(
+            Question,
+            pk=self.kwargs['question_pk'],
+            poll__id=self.kwargs['id'],
+        )
+        serializer.save(author=self.request.user, question=question)
+
+
+class UserIdPollListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    serializer_class = UserPollSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (SessionAuthentication, BasicAuthentication)
+
+    def get_queryset(self):
+        user_id = self.request.user.id
+        queryset = Poll.objects.exclude(~Q(questions__answers__author__id=user_id))
+        return queryset
