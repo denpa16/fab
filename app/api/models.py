@@ -31,3 +31,34 @@ class Question(models.Model):
 
     def __str__(self):
         return self.text
+
+        
+class Choice(models.Model):
+    name = models.TextField(verbose_name='Вариант ответа')
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name="choices"
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class Answer(models.Model):
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name="answers"
+    )
+    many_choice = models.ManyToManyField(Choice, null=True)
+    one_choice = models.ForeignKey(
+        Choice,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="answers_one_choice"
+    )
+    self_text = models.TextField(null=True)
+
+    def __int__(self):
+        return self.pk

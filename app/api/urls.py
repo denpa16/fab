@@ -6,6 +6,15 @@ from . import views
 router = DefaultRouter()
 
 router.register('polls', views.PollViewSet, basename='polls')
+
+# CRUD вопросов
 router.register('polls/(?P<id>\d+)/questions',views.QuestionViewSet,basename='questions')
+
+# CRUD вариантов ответов
+router.register('polls/(?P<id>\d+)/questions/(?P<question_pk>\d+)/choices',views.ChoiceViewSet,basename='choices')
+
+# READ всех активных опросов
+router.register('active_polls', views.ActivePollListViewSet)
+
 
 urlpatterns = router.urls
